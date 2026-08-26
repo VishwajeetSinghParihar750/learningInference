@@ -7,7 +7,7 @@ using namespace std;
 
 
 class Layer {
-    vector<vector<double>> weights;
+    vector<double> weights;
     vector<double> biases;
 
     static auto relu ( double outputWithBias) {
@@ -15,19 +15,19 @@ class Layer {
     }
 
 public:
-    Layer(vector<vector<double>> weights, vector<double> biases) : weights(weights), biases(biases) {
-        assert(weights.size() == biases.size() && !biases.empty());
+    Layer(vector<double> weights, vector<double> biases) : weights(weights), biases(biases) {
+        assert(!biases.empty());
     }
 
     vector<double> forward(vector<double> inputs) {
         //
-        int countNeurons = this->weights.size();
+        int countNeurons = this->biases.size();
         vector<double> output = this->biases; 
 
         for(int i = 0; i < countNeurons; i ++)
         {
             for (int  j =0 ; j < inputs.size(); j ++)
-                output[i] += this->weights[i][j] * inputs[j]; 
+                output[i] += this->weights[i*inputs.size() + j] * inputs[j]; 
             
             output[i] = relu(output[i]);
         }
@@ -45,7 +45,7 @@ public:
         assert(!layers.empty());
     }
 
-    static Network loadNetwork(string filePath) {
+    static Network loadNetwork(const string &filePath) {
         ifstream inFile(filePath);
         
         int countLayers;
@@ -60,12 +60,12 @@ public:
             int neuronsCount, inputCount;
             inFile >> neuronsCount >> inputCount;
 
-            vector<vector<double>> weights(neuronsCount, vector<double>(inputCount));
+            vector<double> weights(neuronsCount * inputCount);
             vector<double> biases(neuronsCount);
 
             for(int j = 0; j < neuronsCount; j ++) {
                 for(int k = 0; k < inputCount; k ++) {
-                    inFile >> weights[j][k];
+                    inFile >> weights[j * inputCount + k];
                 }
             }
             for(int j = 0; j < neuronsCount; j ++) 

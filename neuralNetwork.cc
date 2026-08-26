@@ -1,51 +1,100 @@
-
 #include <algorithm>
+#include <cassert>
+#include <fstream>
 #include <iostream>
 #include <vector>
 using namespace std;
 
-// how much sleep , how good is weather  
-vector<vector<double>> l1weights{{.7, .8}, {.3, .4}};
-// generally dont wanna run 
-vector<double> l1biases {-1, 3};
 
-vector<vector<double>> l2weights{ {.2, .1}};
-// generally dont wanna run 
-vector<double> l2biases {2};
+class Layer {
+    vector<vector<double>> weights;
+    vector<double> biases;
 
-
-vector<double> inputs{.5, .9};
-
-
-auto relu ( double outputWithBias) {
-    return max( outputWithBias, (double)0);
-}
-
-vector<double> neuralNetLayer(vector<double> inputs, vector<vector<double>> weights, vector<double> biases) {
-    //
-    int countNeurons = weights.size();
-
-    vector<double> output = biases; 
-
-    for(int i = 0; i < countNeurons; i ++)
-    {
-        for (int  j =0 ; j < inputs.size(); j ++)
-            output[i] += weights[i][j] * inputs[j]; 
-         
-        output[i] = relu(output[i]);
+    static auto relu ( double outputWithBias) {
+        return max( outputWithBias, (double)0);
     }
 
-    return output;
-}
+public:
+    Layer(vector<vector<double>> weights, vector<double> biases) : weights(weights), biases(biases) {
+        assert(weights.size() == biases.size() && !biases.empty());
+    }
 
-int main () {
-    
+    vector<double> forward(vector<double> inputs) {
+        //
+        int countNeurons = this->weights.size();
+        vector<double> output = this->biases; 
 
-    auto l1ans =  neuralNetLayer(inputs, l1weights, l1biases);
-    auto l2ans = neuralNetLayer(l1ans, l2weights , l2biases);
+        for(int i = 0; i < countNeurons; i ++)
+        {
+            for (int  j =0 ; j < inputs.size(); j ++)
+                output[i] += this->weights[i][j] * inputs[j]; 
+            
+            output[i] = relu(output[i]);
+        }
+        return output;
+    }
+};
 
-    
-    for(auto i : l2ans) cout << i << " ";
+
+class Network {
+
+    vector<Layer> layers;
+
+public:
+    Network(vector<Layer> layers) : layers(layers) {
+        assert(!layers.empty());
+    }
+
+    static Network loadNetwork(string filePath) {
+        ifstream inFile(filePath);
+        
+        int countLayers;
+        inFile >> countLayers;
+
+        assert(countLayers > 0);
+
+        vector<Layer> layers;
+
+        for(int i = 0; i < countLayers; i ++) {
+            //
+            int neuronsCount, inputCount;
+            inFile >> neuronsCount >> inputCount;
+
+            vector<vector<double>> weights(neuronsCount, vector<double>(inputCount));
+            vector<double> biases(neuronsCount);
+
+            for(int j = 0; j < neuronsCount; j ++) {
+                for(int k = 0; k < inputCount; k ++) {
+                    inFile >> weights[j][k];
+                }
+            }
+            for(int j = 0; j < neuronsCount; j ++) 
+                inFile >> biases[j];
+
+
+            layers.emplace_back(weights, biases);
+
+        }
+
+
+        return layers;
+    }
+
+    vector<double> forward(vector<double> inputs) {
+
+        auto output = layers[0].forward(inputs);
+        for(int i = 1; i < this->layers.size(); i++ ) {
+            output = layers[i].forward(output);
+        }
+        return output;
+    }
+
+};
+
+
+int main() {
+    Network net = Network::loadNetwork("./input.txt");
+    auto result = net.forward({.5, .9});
+    for (auto v : result) cout << v << " ";
     cout << endl;
-
 }

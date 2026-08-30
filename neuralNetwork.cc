@@ -93,8 +93,8 @@ public:
 
 
 int main() {
-    Network net = Network::loadNetwork("./input.txt");
-    auto result = net.forward({.5, .9});
-    for (auto v : result) cout << v << " ";
-    cout << endl;
+
+    Network net = Network::loadNetwork("./input_big.txt");
+    for(int i =0 ; i < 1000; i ++)
+        net.forward(vector<double>(512, .001 * i  ));
 }
